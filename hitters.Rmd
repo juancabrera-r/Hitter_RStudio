@@ -1,0 +1,205 @@
+---
+title: "Hitters"
+author: "Juan Manuel Cabrera"
+date: "2023-07-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      message = F,
+                      warning = F)
+```
+
+
+```{r}
+#Librerias
+library(ggplot2)
+library(dplyr)
+
+#Carga el archivo
+hitters <- read.csv("Hitters.csv", sep = ",")
+```
+
+
+### **0. Preprocesado del dataframe Hitter**
+
+Se carga el dataset Hitters y se muestran las 6 primeras filas,
+
+Se observa que el dataset está formado por un total de `r dim(hitters)[2]` 
+características y `r dim(hitters)[1]` muestras.
+
+
+```{r}
+#Muestra las 6 primera filas
+head(hitters)
+```
+
+A continuación se muestra una tabla con los distintos tipos de datos que conforman
+el dataframe.
+
+Se disponen de varias variables que se pueden factorizar, estas son:
+
+###
+* League
+* Division
+* NewLeague
+
+```{r}
+#Muestra los tipos de datos
+str(hitters)
+
+```
+
+```{r}
+#Factorizamos algunos datos
+
+hitters$League <- as.factor(hitters$League)
+hitters$Division <- as.factor(hitters$Division)
+hitters$NewLeague <- as.factor(hitters$NewLeague)
+
+```
+
+### **1. Variables factor**
+
+Se crea un nuevo conjunto de datos con las variables factor y se muestran sus nombres.
+
+```{r}
+#A cada variable del dataframe se aplica la función is.factor para ver si es una
+#variable factor, después se guardan en un dataframe aquellas variables factor.
+#se observa si la variable se crea un nuevo conjunto
+var_factor <- hitters[sapply(hitters, is.factor)]
+
+#Se muestran los nombres de las variables
+colnames(var_factor)
+  
+```
+
+### **2. Variables jugador, homruns, años en grandes ligas y salario**
+
+Se crea un conjunto de datos llamano "jugadodres" donde se almacenan las siguientes
+variables:
+
+###
+* player
+* HmRun
+* Year
+* Salary
+
+Se muestran las 6 primeras filas del nuevo conjunto de datos.
+```{r}
+#Se seleccionan las columnas y se almacena en el dataframe jugadores
+jugadores <- hitters %>% 
+  select(player, HmRun, Years, Salary)
+
+head(jugadores)
+```
+
+### **3. Ordenar jugadores por salarios**
+
+A partir del nuevo conjunto de datos "jugadores" se ordena según salario de forma
+decreciente.
+
+Se muestran las 5 primeras filas.
+```{r}
+#Se ordena el dataframe jugadores según la variable Salary
+jugadores <- arrange(jugadores, desc(Salary))
+
+head(jugadores,5)
+```
+
+### **4. Jugadores de la liga nacional de 1986**
+
+A continuación se van a mostrar el nombre de aquellos jugadores que pertenezcan 
+a la liga Nacional (N) y que cobren mas de 2.000 miles de $.
+
+```{r}
+#Se filtra por liga y salario y se selecciona la columna player
+hitters %>% 
+  filter(League == 'N', Salary > 2000) %>% 
+  select(player)
+```
+
+### **5.Jugadores con un salario entre 1300 y 1500 miles de dolares**
+
+A partir del datafram se van a mostrar las carateristicas player y Salary de
+aquellos jugadores que cobren entre 1300 y 1500 miles de dolares, además se
+ordenará el salario de mayor a menor.
+
+```{r}
+#En primer lugar se filtra según el salario, después se seleccionan las columnas
+#player y Salary y en último lugar se filtra de forma descendente.
+hitters %>% 
+  filter(Salary >= 1300 & Salary <= 1500) %>% 
+  select(player, Salary) %>% 
+  arrange(desc(Salary))
+```
+
+
+### **6. Conjunto de datos salario por homeruns**
+
+En este apartado se va a crear un nuevo conjunto de datos con una nueva variable
+donde se muestra el salario por del números de homeruns.
+
+Se muestra los 6 primeros jugadores y el salario por del números de homeruns ordenado
+de forma creaciente.
+
+```{r}
+salary_per_homerun <- hitters %>% 
+  #Se cra una nueva variable con los datos deseados
+  mutate(salary_per_homeruns = Salary/HmRun) %>%
+  #Se selecciona las variables player y salary_per_homeruns
+  select(player, salary_per_homeruns) %>% 
+  #Ordena de menor a mayor
+  arrange(salary_per_homeruns)
+
+head(salary_per_homerun)
+```
+
+
+### **7. Homeruns identificador**
+
+En el dataframe se crea una nueva variable llamada HmRun_Status donde se identifica 
+cada jugador en función el número de homeruns según se muestra a continuación:
+
+###
+* Menos de 4 homeruns se identifica como "bajo"
+* Entre 4 y 16 homeruns se identifica como "medio"
+* Más de 16 homeruns se identifica como "alto"
+
+```{r}
+
+hitters %>% 
+  #Se crea una nueva variable factorizada
+  mutate(HmRun_Status = factor(
+    #Para cada caso se le asigna un identificador
+    case_when(
+      HmRun < 4 ~ 'bajo',
+      HmRun >= 4 & HmRun <16 ~ 'medio',
+     HmRun >= 16 ~ 'alto',
+))) %>% 
+  head()
+
+
+```
+
+
+
+### **8. Media homeruns por liga**
+
+Se crea una característica nueva en el dataframe donde se calcula la media de homeruns
+por liga.
+
+Se muestran las columnas player y la nueva característica creada.
+
+```{r}
+
+hitters %>% 
+  #Se agrupa por liga
+  group_by(League) %>%
+  #Se determina la media de homeruns
+  mutate(mean_HmRun = mean(HmRun)) %>% 
+  #Muestra las 6 primeras filas del df 
+  select(player, mean_HmRun) %>% 
+  head()
+```
